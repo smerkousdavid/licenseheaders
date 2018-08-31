@@ -3,7 +3,8 @@
 
 """A tool to change or add license headers in all supported files in or below a directory."""
 
-# Copyright (c) 2016 Johann Petrak
+# Original Copyright (c) 2016 Johann Petrak
+# Modified Copyright (c) 2018 David Smerkous
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -26,7 +27,6 @@
 from __future__ import unicode_literals
 from __future__ import print_function
 
-
 import os
 import shutil
 import sys
@@ -38,10 +38,11 @@ from string import Template
 from shutil import copyfile
 import io
 import subprocess
+import datetime
 
 
-__version__ = '0.1'  
-__author__ = 'Johann Petrak'
+__version__ = '0.2'
+__author__ = 'Johann Petrak, David Smerkous'
 __license__ = 'MIT'
 
 
@@ -53,12 +54,22 @@ try:
 except NameError:
     unicode = str
 
-
-
 # for each processing type, the detailed settings of how to process files of that type
 typeSettings = {
     "java": {
         "extensions": [".java",".scala",".groovy",".jape"],
+        "keepFirst": None,
+        "blockCommentStartPattern": re.compile('^\s*/\*'),  ## used to find the beginning of a header bloc
+        "blockCommentEndPattern": re.compile(r'\*/\s*$'),   ## used to find the end of a header block
+        "lineCommentStartPattern": re.compile(r'\s*//'),    ## used to find header blocks made by line comments
+        "lineCommentEndPattern": None,
+        "headerStartLine": "/*\n",   ## inserted before the first header text line
+        "headerEndLine": " */\n",    ## inserted after the last header text line
+        "headerLinePrefix": " * ",   ## inserted before each header text line
+        "headerLineSuffix": None,            ## inserted after each header text line, but before the new line
+    },
+    "javascript": {
+        "extensions": [".js",".ts",".jsx",".jsx"],
         "keepFirst": None,
         "blockCommentStartPattern": re.compile('^\s*/\*'),  ## used to find the beginning of a header bloc
         "blockCommentEndPattern": re.compile(r'\*/\s*$'),   ## used to find the end of a header block
@@ -199,18 +210,20 @@ def parse_command_line(argv):
                         action="count", default=0,
                         help="increases log verbosity (can be specified "
                         "multiple times)")
-    parser.add_argument("-d", "--dir", dest="dir", nargs=1,
+    parser.add_argument("-d", "--dir", dest="dir", nargs=1, type=str, default=".",
                         help="The directory to recursively process.")
-    parser.add_argument("-t", "--tmpl", dest="tmpl", nargs=1,
+    parser.add_argument("-t", "--tmpl", dest="tmpl", nargs=1, type=str, default=None,
                         help="Template name or file to use.")
-    parser.add_argument("-y", "--years", dest="years", nargs=1,
+    parser.add_argument("-y", "--years", dest="years", nargs=1, type=str, default=None,
                         help="Year or year range to use.")
-    parser.add_argument("-o", "--owner", dest="owner", nargs=1,
+    parser.add_argument("-o", "--owner", dest="owner", nargs=1, type=str, default=None,
                         help="Name of copyright owner to use.")
-    parser.add_argument("-n", "--projname", dest="projectname", nargs=1,
+    parser.add_argument("-n", "--projname", dest="projectname", nargs=1, type=str, default=None,
                         help="Name of project to use.")
-    parser.add_argument("-u", "--projurl", dest="projecturl", nargs=1,
+    parser.add_argument("-u", "--projurl", dest="projecturl", nargs=1, type=str, default=None,
                         help="Url of project to use.")
+    parser.add_argument("-f", "--include-file", dest="includefile", nargs=1, type=bool, default=True,
+                        help="Include the file name in the header or not")
     arguments = parser.parse_args(argv[1:])
 
     # Sets log level to WARN going more verbose for each new -V.
@@ -230,9 +243,13 @@ def get_paths(patterns, start_dir="."):
 
 # return an array of lines, with all the variables replaced
 # throws an error if a variable cannot be replaced
-def read_template(templateFile,dict):
-    with open(templateFile,'r') as f:
+def read_template(templateFile, fileName, dict):
+    with io.open(templateFile,'r') as f:
         lines = f.readlines()
+    try:
+        dict["file_name"] = fileName if dict["includefile"] else "This file"
+    except:
+        dict["file_name"] = "This file" # don't ask for permission ask for forgiveness
     lines = [Template(line).substitute(dict) for line in lines]  ## use safe_substitute if we do not want an error
     return lines
 
@@ -282,7 +299,7 @@ def read_file(file):
     if not type:
         return None
     settings = typeSettings.get(type)
-    with open(file,'r', encoding='utf8') as f:
+    with io.open(file,'r', encoding='utf8') as f:
         lines = f.readlines()
     ## now iterate throw the lines and try to determine the various indies
     ## first try to find the start of the header: skip over shebang or empty lines
@@ -375,7 +392,9 @@ def main():
             settings["projectname"] = arguments.projectname[0]
         if arguments.projecturl:
             settings["projecturl"] = arguments.projecturl[0]
-        ## if we have a template name specified, try to get or load the template
+        if arguments.includefile:
+            settings["includefile"] = arguments.includefile[0]
+
         if arguments.tmpl:
             opt_tmpl = arguments.tmpl[0]
             ## first get all the names of our own templates
@@ -387,29 +406,7 @@ def main():
             templates = [(os.path.splitext(os.path.basename(t))[0],t) for t in templates]
             ## filter by trying to match the name against what was specified
             tmpls = [t for t in templates if opt_tmpl in t[0]]
-            if len(tmpls) == 1:
-                tmplName = tmpls[0][0]
-                tmplFile = tmpls[0][1]
-                print("Using template ",tmplName)
-                templateLines = read_template(tmplFile,settings)
-            else:
-                if len(tmpls) == 0:
-                    ## check if we can interpret the option as file
-                    if os.path.isfile(opt_tmpl):
-                        print("Using file ",os.path.abspath(opt_tmpl))
-                        templateLines = read_template(os.path.abspath(opt_tmpl),settings)
-                    else:
-                        print("Not a built-in template and not a file, cannot proceed: ", opt_tmpl)
-                        print("Built in templates: ", ", ".join([t[0] for t in templates]))
-                        error = True
-                else:
-                    ## notify that there are multiple matching templates
-                    print("There are multiple matching template names: ",[t[0] for t in tmpls])
-                    error = True
-        else: # no tmpl parameter
-            if not arguments.years:
-                print("No template specified and no years either, nothing to do")
-                error = True
+
         if not error:
             #logging.debug("Got template lines: %s",templateLines)
             ## now do the actual processing: if we did not get some error, we have a template loaded or no template at all
@@ -419,6 +416,8 @@ def main():
             logging.debug("Patterns: %s",patterns)
             for file in get_paths(patterns,start_dir):
                 logging.debug("Processing file: %s",file)
+                fileName = os.path.basename(file)
+                
                 dict = read_file(file)
                 if not dict:
                     logging.debug("File not supported %s",file)
@@ -426,10 +425,40 @@ def main():
                 # logging.debug("DICT for the file: %s",dict)
                 logging.debug("Info for the file: headStart=%s, headEnd=%s, haveLicense=%s, skip=%s",dict["headStart"],dict["headEnd"],dict["haveLicense"],dict["skip"])
                 lines = dict["lines"]
+
+                ## if we have a template name specified, try to get or load the template
+                if arguments.tmpl:
+                    if len(tmpls) == 1:
+                        tmplName = tmpls[0][0]
+                        tmplFile = tmpls[0][1]
+                        print("Using template ",tmplName)
+                        templateLines = read_template(tmplFile,fileName,settings)
+                    else:
+                        if len(tmpls) == 0:
+                            ## check if we can interpret the option as file
+                            if os.path.isfile(opt_tmpl):
+                                print("Using file ",os.path.abspath(opt_tmpl))
+                                templateLines = read_template(os.path.abspath(opt_tmpl),fileName,settings)
+                            else:
+                                print("Not a built-in template and not a file, cannot proceed: ", opt_tmpl)
+                                print("Built in templates: ", ", ".join([t[0] for t in templates]))
+                                error = True
+                                break
+                        else:
+                            ## notify that there are multiple matching templates
+                            print("There are multiple matching template names: ",[t[0] for t in tmpls])
+                            error = True
+                            break
+                else: # no tmpl parameter
+                    if not arguments.years:
+                        print("No template specified and no years either, nothing to do")
+                        error = True
+                        break
+
                 ## if we have a template: replace or add
                 if templateLines:
                     # make_backup(file)
-                    with open(file,'w', encoding='utf8') as fw:
+                    with io.open(file,'w', encoding='utf8') as fw:
                         ## if we found a header, replace it
                         ## otherwise, add it after the lines to skip
                         headStart = dict["headStart"]
@@ -455,7 +484,7 @@ def main():
                     yearsLine = dict["yearsLine"]
                     if yearsLine is not None:
                         # make_backup(file)
-                        with open(file,'w') as fw:
+                        with io.open(file, 'w', encoding='utf8') as fw:
                             print("Updating years in file ",file)
                             fw.writelines(lines[0:yearsLine])
                             fw.write(yearsPattern.sub(arguments.years,lines[yearsLine]))
