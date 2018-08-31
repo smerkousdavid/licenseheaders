@@ -76,7 +76,7 @@ typeSettings = {
         "lineCommentStartPattern": re.compile(r'\s*//'),    ## used to find header blocks made by line comments
         "lineCommentEndPattern": None,
         "headerStartLine": "/*\n",   ## inserted before the first header text line
-        "headerEndLine": " */\n",    ## inserted after the last header text line
+        "headerEndLine": " */\n\n",    ## inserted after the last header text line
         "headerLinePrefix": " * ",   ## inserted before each header text line
         "headerLineSuffix": None,            ## inserted after each header text line, but before the new line
     },
@@ -222,8 +222,10 @@ def parse_command_line(argv):
                         help="Name of project to use.")
     parser.add_argument("-u", "--projurl", dest="projecturl", nargs=1, type=str, default=None,
                         help="Url of project to use.")
-    parser.add_argument("-f", "--include-file", dest="includefile", nargs=1, type=bool, default=True,
+    parser.add_argument("-f", "--include-file", dest="includefile", type=bool, default=True,
                         help="Include the file name in the header or not")
+    parser.add_argument("-e", "--exclude", action="append", type=str, default=None,
+                        help="Exclude files that have this pattern")
     arguments = parser.parse_args(argv[1:])
 
     # Sets log level to WARN going more verbose for each new -V.
@@ -393,7 +395,12 @@ def main():
         if arguments.projecturl:
             settings["projecturl"] = arguments.projecturl[0]
         if arguments.includefile:
-            settings["includefile"] = arguments.includefile[0]
+            settings["includefile"] = arguments.includefile
+
+        if arguments.exclude:
+            exclude = arguments.exclude
+        else:
+            exclude = []
 
         if arguments.tmpl:
             opt_tmpl = arguments.tmpl[0]
@@ -415,6 +422,12 @@ def main():
             logging.debug("Processing directory %s",start_dir)
             logging.debug("Patterns: %s",patterns)
             for file in get_paths(patterns,start_dir):
+                passed = True
+                for exc in exclude:
+                    if exc in file:
+                        passed = False
+                if not passed:
+                    continue
                 logging.debug("Processing file: %s",file)
                 fileName = os.path.basename(file)
                 
