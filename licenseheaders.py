@@ -1,10 +1,9 @@
 #!/usr/bin/env python
-# encoding: utf-8
-
-"""A tool to change or add license headers in all supported files in or below a directory."""
+# -*- encoding: utf-8 -*-
 
 # Original Copyright (c) 2016 Johann Petrak
 # Modified Copyright (c) 2018 David Smerkous
+# Modified Copyright (c) 2019 Mayk Choji
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -24,6 +23,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+"""A tool to change or add license headers in all supported files in or below a directory."""
+
+__version__ = '0.3'
+
 from __future__ import unicode_literals
 from __future__ import print_function
 
@@ -40,9 +43,7 @@ import io
 import subprocess
 import datetime
 
-
-__version__ = '0.2'
-__author__ = 'Johann Petrak, David Smerkous'
+__author__ = 'Johann Petrak, David Smerkous, Mayk Choji'
 __license__ = 'MIT'
 
 
