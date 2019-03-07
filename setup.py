@@ -19,7 +19,7 @@ setup(
     keywords="",
     url="http://github.com/mchoji/licenseheaders",
     py_modules=['licenseheaders'],
-    packages=[''],
+    packages=find_packages(),
     package_data={'': ['templates/*']},
     include_package_data=True,
     entry_points={'console_scripts': ['licenseheaders=licenseheaders:main']},
@@ -35,7 +35,7 @@ setup(
                  "Programming Language :: Python :: 3.3",
                  "Programming Language :: Python :: 3.4",
                  "Programming Language :: Python :: 3.5",
-                 "Programming Language :: Python :: 3.7"
+                 "Programming Language :: Python :: 3.7",
                  "Topic :: Software Development",
                  "Topic :: Software Development :: Code Generators",
                  "Intended Audience :: Developers",
