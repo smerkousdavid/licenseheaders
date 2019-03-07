@@ -117,7 +117,7 @@ typeSettings = {
         "headerLineSuffix": None            ## inserted after each header text line, but before the new line
     },
     "c": {
-        "extensions": [".c",".cc",".cpp","c++",".h",".hpp"],
+        "extensions": [".c",".cc",".cpp",".c++",".h",".hpp"],
         "keepFirst": None,
         "blockCommentStartPattern": re.compile(r'^\s*/\*'),
         "blockCommentEndPattern": re.compile(r'\*/\s*$'),
@@ -210,12 +210,34 @@ def parse_command_line(argv):
     """
     import textwrap
 
+    ## first get all the names of our own templates
+    ## for this get first the path of this file
+    templatesDir = os.path.join(os.path.dirname(os.path.abspath(__file__)),"templates")
+    ## get all the templates in the templates directory
+    templates = [f for f in get_paths("*.tmpl",templatesDir)]
+    templates = [os.path.splitext(os.path.basename(t))[0] for t in templates]
+    templates_str = ", ".join(sorted(templates))
+    ## get all supported extensions
+    patterns = set()
+    for t in typeSettings:
+        settings = typeSettings[t]
+        exts = settings["extensions"]
+        for ext in exts:
+            patterns.add("*"+ext)
+    patterns_str = ", ".join(sorted(patterns))
+
     example = textwrap.dedent("""
       ## Some examples of how to use this command!
     """).format(os.path.basename(argv[0]))
     formatter_class = argparse.RawDescriptionHelpFormatter
+
+    extra_templ = textwrap.fill("Supported template names: " + templates_str, 75)
+    extra_pat = textwrap.fill(("If EXCLUDE is not specified, license header will "
+                                + "be added to all files with following extensions: "
+                                + patterns_str), 75)
+    extra_info = extra_templ + "\n\n" + extra_pat 
     parser = argparse.ArgumentParser(description="Python license header updater",
-                                     epilog=example,
+                                     epilog=extra_info,
                                      formatter_class=formatter_class)
     parser.add_argument("-V", "--version", action="version",
                         version="%(prog)s {}".format(__version__))
