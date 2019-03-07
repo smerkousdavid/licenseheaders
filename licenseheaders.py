@@ -25,8 +25,6 @@
 
 """A tool to change or add license headers in all supported files in or below a directory."""
 
-__version__ = '0.3'
-
 from __future__ import unicode_literals
 from __future__ import print_function
 
@@ -45,6 +43,7 @@ import datetime
 
 __author__ = 'Johann Petrak, David Smerkous, Mayk Choji'
 __license__ = 'MIT'
+__version__ = '0.3'
 
 
 log = logging.getLogger(__name__)
@@ -175,6 +174,19 @@ typeSettings = {
         "headerStartLine": "%% -*- erlang -*-\n%% %CopyrightBegin%\n%%\n",   ## inserted before the first header text line
         "headerEndLine": "%%\n%% %CopyrightEnd%\n\n",    ## inserted after the last header text line
         "headerLinePrefix": "%% ",   ## inserted before each header text line
+        "headerLineSuffix": None,            ## inserted after each header text line, but before the new line
+    },
+    "python": {
+        "extensions": [".py"],
+        "keepFirst": re.compile(r'^#!'),
+        "keepMore": re.compile(r'^#.*coding.+'),  ## keep special lines after the first line
+        "blockCommentStartPattern": None,  ## used to find the beginning of a header bloc
+        "blockCommentEndPattern": None,   ## used to find the end of a header block
+        "lineCommentStartPattern": re.compile(r'^\s*#'),    ## used to find header blocks made by line comments
+        "lineCommentEndPattern": None,
+        "headerStartLine": "#\n",   ## inserted before the first header text line
+        "headerEndLine": "#\n",    ## inserted after the last header text line
+        "headerLinePrefix": "# ",   ## inserted before each header text line
         "headerLineSuffix": None,            ## inserted after each header text line, but before the new line
     }
 }
@@ -307,13 +319,16 @@ def read_file(file):
     ## now iterate throw the lines and try to determine the various indies
     ## first try to find the start of the header: skip over shebang or empty lines
     keepFirst = settings.get("keepFirst")
+    keepMore = settings.get("keepMore")
     blockCommentStartPattern = settings.get("blockCommentStartPattern")
     blockCommentEndPattern = settings.get("blockCommentEndPattern")
     lineCommentStartPattern = settings.get("lineCommentStartPattern")
     i = 0
     for line in lines:
         if i==0 and keepFirst and keepFirst.findall(line):
-            skip = i+1
+            skip = skip + 1
+        elif i>0 and keepMore and keepMore.findall(line):
+            skip = skip + 1
         elif emptyPattern.findall(line):
             pass
         elif blockCommentStartPattern and blockCommentStartPattern.findall(line):
