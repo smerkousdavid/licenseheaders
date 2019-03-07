@@ -74,13 +74,13 @@ If licenseheaders is installed as a package (from pypi for instance), one can in
 
 ::
 
-  python -m licenseheaders -t lgpl3 -c "Eager Hacker"
+  python -m licenseheaders -t lgpl-v3 -c "Eager Hacker"
 
 or directly:
 
 ::
 
-  licenseheaders -t lgpl3 -c "Eager Hacker"  
+  licenseheaders -t lgpl-v3 -c "Eager Hacker"  
 
 
 
@@ -109,6 +109,7 @@ sources:
 - the command line option that can be used to set the variable (see usage)
 
 Predefined templates:
+
 - gpl-v3: GNU GPL v3.0
 - gpl-v3-multipart: Variation for projects with several source files
 - agpl-v3: GNU AGPL v3.0
@@ -124,16 +125,19 @@ Supported file types and how they are processed
 -----------------------------------------------
 
 C:
+
 - assumed for all files with the extensions: .c, .cc, .cpp, .c++, .h, .hpp
 - only headers that use C block comments (/*...*/) are reconized as existing headers
 - the template text will be wrapped in block comments
 
 Java:
+
 - assumed for all files with the extensions: .java, .scala, .groovy
 - only headers that use Java block comments are recognized as existing headers
 - the template text will be wrapped in block comments
 
 Python:
+
 - assumed for all files with the extension: .py
 - keep first line containing the shebang and (possibly) second line if it contains encoding definition
 - the template text will be wrapped in line comments
