@@ -227,15 +227,23 @@ def parse_command_line(argv):
     patterns_str = ", ".join(sorted(patterns))
 
     example = textwrap.dedent("""
-      ## Some examples of how to use this command!
-    """).format(os.path.basename(argv[0]))
+        {}
+        Examples:
+        # Add a new license header or replace any existing one based on 
+        # the lgpl-v3 template.
+        # Process all files of supported type in or below the current directory.
+        # Use "Eager Hacker" as the copyright owner.
+        {}
+        {} -t lgpl-v3 -c "Eager Hacker"
+        """).format('='*50, '='*50, os.path.basename(argv[0]))
+
     formatter_class = argparse.RawDescriptionHelpFormatter
 
-    extra_templ = textwrap.fill("Supported template names: " + templates_str, 75)
+    extra_templ = textwrap.fill("Supported template names (TMPL): " + templates_str, 75)
     extra_pat = textwrap.fill(("If EXCLUDE is not specified, license header will "
                                 + "be added to all files with following extensions: "
                                 + patterns_str), 75)
-    extra_info = extra_templ + "\n\n" + extra_pat 
+    extra_info = extra_templ + "\n\n" + extra_pat + "\n\n" + example
     parser = argparse.ArgumentParser(description="Python license header updater",
                                      epilog=extra_info,
                                      formatter_class=formatter_class)
