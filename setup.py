@@ -11,13 +11,13 @@ readme = open(os.path.join(here, 'README.rst')).read()
 
 setup(
     name="licenseheaders",
-    version="0.3",
-    author="Johann Petrak",
-    author_email="johann.petrak@gmail.com",
+    version="0.4",
+    author="Mayk Choji",
+    author_email="mayk.choji@gmail.com",
     description='Add or change license headers for all files in a directory',
     license="MIT",
     keywords="",
-    url="http://github.com/johann-petrak/licenseheaders",
+    url="http://github.com/mchoji/licenseheaders",
     py_modules=['licenseheaders'],
     packages=[''],
     package_data={'': ['templates/*']},
@@ -35,6 +35,7 @@ setup(
                  "Programming Language :: Python :: 3.3",
                  "Programming Language :: Python :: 3.4",
                  "Programming Language :: Python :: 3.5",
+                 "Programming Language :: Python :: 3.7"
                  "Topic :: Software Development",
                  "Topic :: Software Development :: Code Generators",
                  "Intended Audience :: Developers",

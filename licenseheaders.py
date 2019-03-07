@@ -43,7 +43,7 @@ import datetime
 
 __author__ = 'Johann Petrak, David Smerkous, Mayk Choji'
 __license__ = 'MIT'
-__version__ = '0.3'
+__version__ = '0.4'
 
 
 log = logging.getLogger(__name__)
