@@ -30,7 +30,9 @@ licenseheaders
 A tool to update, change or add license headers to all files of any of 
 the supported types in or below some directory.
 
-Currently, the following file types are supported: Java/Scala/Groovy, bash/sh/csh, ...
+Currently, the following file types are supported: .c, .c++, .cc, .config, .cpp, .cs, .csh,
+.erl, .groovy, .h, .hpp, .jape, .java, .js, .jsx, .pl, .py, .rb,
+.scala, .schema, .sh, .sql, .src, .ts, .vb, .xml 
 
 
 Usage
@@ -60,23 +62,25 @@ Usage
     -a, --addonly         add a header to all supported file types, ignore any existing headers.
 
   Examples:
-  # Add a new license header or replace any existing one based on the lgpl3 template.
+  # Add a new license header or replace any existing one based on
+  # the lgpl-v3 template.
   # Process all files of supported type in or below the current directory.
   # Use "Eager Hacker" as the copyright owner.
-  licenseheaders.py -t lgpl3 -c "Eager Hacker"
+
+  licenseheaders -t lgpl-v3 -c "Eager Hacker"
 
 
 If licenseheaders is installed as a package (from pypi for instance), one can interact with it as a command line tool:
 
 ::
 
-  python -m licenseheaders -t lgpl3 -c "Eager Hacker"
+  python -m licenseheaders -t lgpl-v3 -c "Eager Hacker"
 
 or directly:
 
 ::
 
-  licenseheaders -t lgpl3 -c "Eager Hacker"  
+  licenseheaders -t lgpl-v3 -c "Eager Hacker"  
 
 
 
@@ -104,14 +108,46 @@ sources:
 - an environment variable with the same name but the prefix `LICENSE_HEADERS_` added
 - the command line option that can be used to set the variable (see usage)
 
+Predefined templates:
+
+- gpl-v3: GNU GPL v3.0
+- gpl-v3-multipart: Variation for projects with several source files
+- agpl-v3: GNU AGPL v3.0
+- agpl-v3-multipart: Variation for projects with several source files
+- lgpl-v2.1: GNU LGPL v2.1
+- lgpl-v3: GNU LGPL v3.0
+- lgpl-v3-multipart: Variation for projects with several source files
+- apache-2: Apache v2.0
+- bsd-3: BSD v3.0
+- mit: MIT
 
 Supported file types and how they are processed
 -----------------------------------------------
 
-Java:
-- assumed for all files with the extensions: .java, .scala, .groovy
-- only headers that use Java block comments are recognised as existing headers
+C:
+
+- assumed for all files with the extensions: .c, .cc, .cpp, .c++, .h, .hpp
+- only headers that use C block comments (/*...*/) are reconized as existing headers
 - the template text will be wrapped in block comments
+
+Java:
+
+- assumed for all files with the extensions: .java, .scala, .groovy
+- only headers that use Java block comments are recognized as existing headers
+- the template text will be wrapped in block comments
+
+Python:
+
+- assumed for all files with the extension: .py
+- keep first line containing the shebang and (possibly) second line if it contains encoding definition
+- the template text will be wrapped in line comments
+
+The full list of supported file extensions can be viewed with
+
+::
+
+   licenseheaders -h
+
 
 License
 -------

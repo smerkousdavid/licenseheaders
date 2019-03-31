@@ -1,10 +1,9 @@
 #!/usr/bin/env python
-# encoding: utf-8
-
-"""A tool to change or add license headers in all supported files in or below a directory."""
+# -*- encoding: utf-8 -*-
 
 # Original Copyright (c) 2016 Johann Petrak
 # Modified Copyright (c) 2018 David Smerkous
+# Modified Copyright (c) 2019 Mayk Choji
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -24,6 +23,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+"""A tool to change or add license headers in all supported files in or below a directory."""
+
 from __future__ import unicode_literals
 from __future__ import print_function
 
@@ -40,10 +41,9 @@ import io
 import subprocess
 import datetime
 
-
-__version__ = '0.2'
-__author__ = 'Johann Petrak, David Smerkous'
+__author__ = 'Johann Petrak, David Smerkous, Mayk Choji'
 __license__ = 'MIT'
+__version__ = '0.4'
 
 
 log = logging.getLogger(__name__)
@@ -117,7 +117,7 @@ typeSettings = {
         "headerLineSuffix": None            ## inserted after each header text line, but before the new line
     },
     "c": {
-        "extensions": [".c",".cc",".cpp","c++",".h",".hpp"],
+        "extensions": [".c",".cc",".cpp",".c++",".h",".hpp"],
         "keepFirst": None,
         "blockCommentStartPattern": re.compile(r'^\s*/\*'),
         "blockCommentEndPattern": re.compile(r'\*/\s*$'),
@@ -175,6 +175,19 @@ typeSettings = {
         "headerEndLine": "%%\n%% %CopyrightEnd%\n\n",    ## inserted after the last header text line
         "headerLinePrefix": "%% ",   ## inserted before each header text line
         "headerLineSuffix": None,            ## inserted after each header text line, but before the new line
+    },
+    "python": {
+        "extensions": [".py"],
+        "keepFirst": re.compile(r'^#!'),
+        "keepMore": re.compile(r'^#.*coding.+'),  ## keep special lines after the first line
+        "blockCommentStartPattern": None,  ## used to find the beginning of a header bloc
+        "blockCommentEndPattern": None,   ## used to find the end of a header block
+        "lineCommentStartPattern": re.compile(r'^\s*#'),    ## used to find header blocks made by line comments
+        "lineCommentEndPattern": None,
+        "headerStartLine": "#\n",   ## inserted before the first header text line
+        "headerEndLine": "#\n",    ## inserted after the last header text line
+        "headerLinePrefix": "# ",   ## inserted before each header text line
+        "headerLineSuffix": None,            ## inserted after each header text line, but before the new line
     }
 }
 
@@ -197,12 +210,42 @@ def parse_command_line(argv):
     """
     import textwrap
 
+    ## first get all the names of our own templates
+    ## for this get first the path of this file
+    templatesDir = os.path.join(os.path.dirname(os.path.abspath(__file__)),"templates")
+    ## get all the templates in the templates directory
+    templates = [f for f in get_paths("*.tmpl",templatesDir)]
+    templates = [os.path.splitext(os.path.basename(t))[0] for t in templates]
+    templates_str = ", ".join(sorted(templates))
+    ## get all supported extensions
+    patterns = set()
+    for t in typeSettings:
+        settings = typeSettings[t]
+        exts = settings["extensions"]
+        for ext in exts:
+            patterns.add("*"+ext)
+    patterns_str = ", ".join(sorted(patterns))
+
     example = textwrap.dedent("""
-      ## Some examples of how to use this command!
-    """).format(os.path.basename(argv[0]))
+        {}
+        Examples:
+        # Add a new license header or replace any existing one based on 
+        # the lgpl-v3 template.
+        # Process all files of supported type in or below the current directory.
+        # Use "Eager Hacker" as the copyright owner.
+        {}
+        {} -t lgpl-v3 -c "Eager Hacker"
+        """).format('='*50, '='*50, os.path.basename(argv[0]))
+
     formatter_class = argparse.RawDescriptionHelpFormatter
+
+    extra_templ = textwrap.fill("Supported template names (TMPL): " + templates_str, 75)
+    extra_pat = textwrap.fill(("If EXCLUDE is not specified, license header will "
+                                + "be added to all files with following extensions: "
+                                + patterns_str), 75)
+    extra_info = extra_templ + "\n\n" + extra_pat + "\n\n" + example
     parser = argparse.ArgumentParser(description="Python license header updater",
-                                     epilog=example,
+                                     epilog=extra_info,
                                      formatter_class=formatter_class)
     parser.add_argument("-V", "--version", action="version",
                         version="%(prog)s {}".format(__version__))
@@ -306,13 +349,16 @@ def read_file(file):
     ## now iterate throw the lines and try to determine the various indies
     ## first try to find the start of the header: skip over shebang or empty lines
     keepFirst = settings.get("keepFirst")
+    keepMore = settings.get("keepMore")
     blockCommentStartPattern = settings.get("blockCommentStartPattern")
     blockCommentEndPattern = settings.get("blockCommentEndPattern")
     lineCommentStartPattern = settings.get("lineCommentStartPattern")
     i = 0
     for line in lines:
         if i==0 and keepFirst and keepFirst.findall(line):
-            skip = i+1
+            skip = skip + 1
+        elif i>0 and keepMore and keepMore.findall(line):
+            skip = skip + 1
         elif emptyPattern.findall(line):
             pass
         elif blockCommentStartPattern and blockCommentStartPattern.findall(line):
